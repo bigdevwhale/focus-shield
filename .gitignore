@@ -1,0 +1,9 @@
+# Personal settings — created on first save, never committed
+config.json
+*.json.tmp
+
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.log

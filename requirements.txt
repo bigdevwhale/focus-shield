@@ -1,0 +1,5 @@
+pystray>=0.19
+Pillow>=10.0
+winotify>=1.1.0
+opencv-python>=4.8
+sv-ttk>=2.6
