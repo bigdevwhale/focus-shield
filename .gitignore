@@ -7,3 +7,8 @@ __pycache__/
 .venv/
 venv/
 *.log
+
+# PyInstaller output (python build.py)
+build/
+dist/
+*.spec

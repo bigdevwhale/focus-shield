@@ -80,8 +80,9 @@ EN = {
     "Выход": "Quit",
     "Скрыть таймер": "Hide timer",
     "нет прав администратора": "no administrator rights",
-    "Блокировка hosts работать не будет. Переустанови: python install.py":
-        "Website blocking via hosts won't work. Reinstall: python install.py",
+    "Блокировка сайтов, папок и приложений не будет работать. Запусти FocusShield от имени "
+    "администратора.":
+        "Blocking of websites, folders and apps won't work. Run FocusShield as administrator.",
     "Фокус восстановлен": "Focus restored",
     "Осталось {left}": "{left} left",
     "не удалось заблокировать": "blocking failed",

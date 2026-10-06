@@ -19,6 +19,7 @@ import queue
 import sys
 import time
 import tkinter as tk
+from pathlib import Path
 
 import blocker
 import config
@@ -59,13 +60,79 @@ def setup_logging() -> None:
         root.addHandler(sh)
 
 
+SHOW_EVENT = "Local\\focus-shield-show"
+EVENT_MODIFY_STATE = 0x0002
+
+
 def single_instance() -> bool:
-    """Named mutex: второй инстанс молча выходит, hosts не трогая.
+    """Named mutex: второй инстанс не трогает hosts, а будит первый (событие
+    SHOW_EVENT — первый покажет таймер или начнёт сессию) и выходит.
     Local\\ — общая для задачи планировщика и ручного запуска в рамках
-    одной логон-сессии, и не требует привилегий. Хэндл живёт до выхода."""
-    global _mutex
-    _mutex = ctypes.windll.kernel32.CreateMutexW(None, False, "Local\\focus-shield")
-    return ctypes.windll.kernel32.GetLastError() != ERROR_ALREADY_EXISTS
+    одной логон-сессии, и не требует привилегий. Хэндлы живут до выхода."""
+    global _mutex, _show_event
+    k32 = ctypes.windll.kernel32
+    _mutex = k32.CreateMutexW(None, False, "Local\\focus-shield")
+    if k32.GetLastError() == ERROR_ALREADY_EXISTS:
+        ev = k32.OpenEventW(EVENT_MODIFY_STATE, False, SHOW_EVENT)
+        if ev:
+            k32.SetEvent(ev)
+            k32.CloseHandle(ev)
+        return False
+    _show_event = k32.CreateEventW(None, False, False, SHOW_EVENT)  # auto-reset
+    return True
+
+
+def show_requested() -> bool:
+    """Второй экземпляр просил показаться? (неблокирующая проверка)"""
+    ev = globals().get("_show_event")
+    return bool(ev) and ctypes.windll.kernel32.WaitForSingleObject(ev, 0) == 0
+
+
+def message_box(text: str, error: bool = False) -> None:
+    """У exe нет консоли — результат CLI-команд показываем окном."""
+    ctypes.windll.user32.MessageBoxW(None, text, "FocusShield", 0x10 if error else 0x40)
+
+
+def ensure_autostart() -> None:
+    """Собранный exe сам прописывает себе автозапуск (и перепрописывает, если
+    его переместили). Нужны права администратора — exe их запрашивает."""
+    if not config.FROZEN or not is_admin():
+        return
+    import autostart
+    try:
+        if not autostart.is_registered_for(sys.executable):
+            autostart.register(sys.executable)
+    except Exception:
+        log.exception("регистрация автозапуска упала")
+
+
+def run_cli(args) -> int:
+    """Служебные команды exe: --uninstall, --unblock. None — запускать приложение."""
+    if "--unblock" in args or "--uninstall" in args:
+        errors = []
+        if "--uninstall" in args and config.FROZEN:
+            # Остановить работающий экземпляр, иначе он вернёт блокировки на месте.
+            blocker.kill_blocked_apps([Path(sys.executable).name])
+        for name, fn in (("hosts", hosts.normalize), ("folders", blocker.allow_all)):
+            try:
+                fn()
+            except Exception as e:
+                errors.append(f"{name}: {e}")
+        if "--uninstall" in args:
+            import autostart
+            try:
+                autostart.unregister()
+            except Exception as e:
+                errors.append(f"autostart: {e}")
+        if errors:
+            message_box("Some steps failed (run as administrator):\n\n" + "\n".join(errors),
+                        error=True)
+            return 1
+        message_box("FocusShield removed from autostart and all blocks lifted.\n\n"
+                    f"Your data is kept in {config.DATA_DIR}"
+                    if "--uninstall" in args else "All blocks lifted.")
+        return 0
+    return None
 
 
 def is_admin() -> bool:
@@ -156,11 +223,13 @@ class App:
         self.tray.start()
         self.root.after(100, self._poll)
         self.root.after(200, self._tick)  # первый тик нарисует иконку, тайтл и таймер
-        log.info("FocusShield запущен (admin=%s)", is_admin())
+        from version import __version__
+        log.info("FocusShield %s запущен (admin=%s, exe=%s)", __version__, is_admin(),
+                 config.FROZEN)
         if not is_admin():
             self.notifier.toast(
                 "FocusShield: " + T("нет прав администратора"),
-                T("Блокировка hosts работать не будет. Переустанови: python install.py"))
+                T("Блокировка сайтов, папок и приложений не будет работать. Запусти FocusShield от имени администратора."))
         self.root.mainloop()
 
     def _startup_recovery(self):
@@ -510,6 +579,8 @@ class App:
 
     def _tick_body(self):
         now = time.time()
+        if show_requested():  # exe запустили ещё раз — показаться
+            self.emit("tray_click")
         for event in self.sm.tick(now):
             if event == "focus_end" and not self._in_transition:
                 self._in_transition = True
@@ -587,6 +658,9 @@ class App:
 
 
 def main() -> int:
+    if any(a in sys.argv for a in ("--uninstall", "--unblock")):
+        setup_logging()
+        return run_cli(sys.argv)
     if not single_instance():
         return 0
     try:
@@ -597,6 +671,7 @@ def main() -> int:
         except Exception:
             pass
     setup_logging()
+    ensure_autostart()
     app = App()
     app.start()
     return 0

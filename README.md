@@ -12,6 +12,8 @@ websites, browser tabs, apps and folders — and helps you keep yourself honest.
 ![Local only](https://img.shields.io/badge/data-100%25%20local-2ea44f)
 ![English | Русский](https://img.shields.io/badge/UI-English%20%7C%20%D0%A0%D1%83%D1%81%D1%81%D0%BA%D0%B8%D0%B9-8A2BE2)
 
+<a href="https://github.com/bigdevwhale/focus-shield/releases/latest/download/FocusShield.exe"><img src="https://img.shields.io/badge/Download-FocusShield.exe-2ea44f?style=for-the-badge&logo=windows&logoColor=white" alt="Download FocusShield.exe"></a>
+
 [Features](#-features) · [Install](#-install) · [How it works](#-how-it-works) · [FAQ](#-faq) · [Русский](README.ru.md)
 
 </div>
@@ -114,21 +116,31 @@ blocked apps and folders, focus apps and triggers, captures, theme
 
 ## 🚀 Install
 
-Requirements: **Windows 10 / 11** and **Python 3.10+** from
-[python.org](https://www.python.org/downloads/) (with tkinter — the default).
+### Download (recommended)
+
+1. Grab **[FocusShield.exe](https://github.com/bigdevwhale/focus-shield/releases/latest/download/FocusShield.exe)**
+   from the [latest release](https://github.com/bigdevwhale/focus-shield/releases/latest) — one file, no Python needed.
+2. Run it and accept the administrator prompt.
+3. That's it — FocusShield adds itself to Windows startup and lives in the tray.
+
+> **SmartScreen:** the exe isn't code-signed, so Windows may show
+> *"Windows protected your PC"*. Click **More info → Run anyway**. Every release
+> is built from source by [GitHub Actions](.github/workflows/release.yml) and
+> ships with a `.sha256` checksum.
+
+> **Tip:** Windows 11 hides new tray icons. Drag the FocusShield icon out of the
+> `^` overflow area so it's always visible.
+
+### From source
+
+Requires **Python 3.10+** from [python.org](https://www.python.org/downloads/) (with tkinter — the default).
 
 ```powershell
 git clone https://github.com/bigdevwhale/focus-shield.git
 cd focus-shield
-python install.py
+python install.py      # run from source, with autostart
+python build.py        # …or build your own dist\FocusShield.exe
 ```
-
-The installer asks for administrator rights once (UAC), installs the
-dependencies and registers FocusShield to start with Windows. Answer `y` to
-launch it right away.
-
-> **Tip:** Windows 11 hides new tray icons. Drag the FocusShield icon out of the
-> `^` overflow area so it's always visible.
 
 ### Usage
 
@@ -141,7 +153,7 @@ Right-click the tray icon or the timer for **Statistics**, **Photos by day** and
 ### Uninstall
 
 ```powershell
-python uninstall.py
+FocusShield.exe --uninstall    # or, from source: python uninstall.py
 ```
 
 Removes autostart and lifts all blocks. Your stats and photos stay in
@@ -155,8 +167,9 @@ FocusShield is a small Python app: a system-tray icon (`pystray`), a Windows 11
 style UI (`tkinter` + the Sun Valley theme), toasts (`winotify`) and plain
 WinAPI via `ctypes` for windows, processes and folder permissions.
 
-- **Runs elevated** through a Task Scheduler entry at logon, so blocking needs
-  no UAC prompt per session.
+- **Single-file exe** built with PyInstaller. On first run it registers a Task
+  Scheduler entry at logon with highest privileges, so there's no UAC prompt
+  on every boot. Launching it again just brings the running instance forward.
 - **Crash-safe.** Session state is written atomically with absolute end
   times. On every start, FocusShield removes all of its blocks and then resumes
   an unfinished session — nothing stays blocked by accident.
@@ -176,6 +189,8 @@ WinAPI via `ctypes` for windows, processes and folder permissions.
 | `stats.py` | SQLite: sessions, distractions, streaks |
 | `theme.py`, `i18n.py` | design system and translations |
 | `ui_*.py` | timer widget, dialogs, break, stats, settings |
+| `autostart.py` | Task Scheduler registration (used by the exe and `install.py`) |
+| `build.py` | builds `dist/FocusShield.exe`; CI runs it for every `v*` tag |
 
 ---
 
@@ -193,14 +208,15 @@ on window titles, so it doesn't care how traffic is routed. Keep it enabled in
 <details>
 <summary><b>Something stayed blocked — how do I unblock manually?</b></summary>
 
-From an **administrator** terminal in the project folder:
+Run `FocusShield.exe --unblock` (it asks for admin rights). From source, in an
+**administrator** terminal:
 
 ```powershell
 python hosts.py --unblock     # websites
 python blocker.py --unblock   # folders
 ```
 
-Or simply run `python uninstall.py`. A backup of your original `hosts` file is
+Or uninstall completely with `FocusShield.exe --uninstall`. A backup of your original `hosts` file is
 kept next to it as `hosts.focus-shield.bak`.
 </details>
 

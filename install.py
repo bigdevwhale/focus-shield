@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
-"""Установка FocusShield (запускать один раз):
+"""Установка FocusShield из исходников (запускать один раз):
 
     python install.py
+
+(Готовому FocusShield.exe установка не нужна — он сам прописывает
+автозапуск при первом запуске.)
 
 Что делает:
   1. сам запрашивает права администратора (UAC);
@@ -10,13 +13,13 @@
      максимальные права, без лимита времени выполнения, рестарт при падении;
   4. предлагает запустить сразу.
 """
-import base64
 import ctypes
 import subprocess
 import sys
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent
+sys.path.insert(0, str(BASE_DIR))
 TASK_NAME = "FocusShield"
 
 
@@ -38,14 +41,6 @@ def elevate_and_exit() -> None:
     sys.exit(0)
 
 
-def run_ps(script: str) -> subprocess.CompletedProcess:
-    enc = base64.b64encode(script.encode("utf-16-le")).decode("ascii")
-    return subprocess.run(
-        ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass",
-         "-EncodedCommand", enc],
-        capture_output=True, text=True, timeout=120)
-
-
 def pythonw() -> str:
     exe = Path(sys.executable)
     candidate = exe.with_name("pythonw.exe")
@@ -53,22 +48,9 @@ def pythonw() -> str:
 
 
 def register_task() -> None:
-    main_py = BASE_DIR / "main.py"
-    work_dir = BASE_DIR
-    script = f"""
-$ErrorActionPreference = 'Stop'
-$action = New-ScheduledTaskAction -Execute '{pythonw()}' -Argument '"{main_py}"' -WorkingDirectory '{work_dir}'
-$trigger = New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME
-$principal = New-ScheduledTaskPrincipal -UserId $env:USERNAME -LogonType Interactive -RunLevel Highest
-$settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit ([TimeSpan]::Zero) -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1) -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable
-Register-ScheduledTask -TaskName '{TASK_NAME}' -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Force | Out-Null
-Write-Output 'TASK_OK'
-"""
-    r = run_ps(script)
-    if "TASK_OK" not in (r.stdout or ""):
-        print("Не удалось зарегистрировать задачу планировщика:")
-        print(r.stdout or "")
-        print(r.stderr or "")
+    import autostart
+    if not autostart.register(pythonw(), f'"{BASE_DIR / "main.py"}"', BASE_DIR):
+        print("Не удалось зарегистрировать задачу планировщика (подробности в логе).")
         sys.exit(1)
     print("Задача планировщика зарегистрирована (автозапуск при входе).")
 

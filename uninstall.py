@@ -9,14 +9,11 @@
   4. данные (статистика, снимки) не трогает — их можно удалить руками из
      %LOCALAPPDATA%\\focus-shield.
 """
-import base64
 import ctypes
-import subprocess
 import sys
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent
-TASK_NAME = "FocusShield"
 
 
 def is_admin() -> bool:
@@ -46,19 +43,12 @@ def main() -> int:
         print("Запрашиваю права администратора…")
         elevate_and_exit()
 
-    script = f"""
-$ErrorActionPreference = 'SilentlyContinue'
-Unregister-ScheduledTask -TaskName '{TASK_NAME}' -Confirm:$false
-Write-Output 'DONE'
-"""
-    enc = base64.b64encode(script.encode("utf-16-le")).decode("ascii")
-    subprocess.run(["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass",
-                    "-EncodedCommand", enc], capture_output=True, timeout=60)
-    print("Задача планировщика удалена.")
-
-    # Чистим hosts напрямую, без импорта main-модулей.
     sys.path.insert(0, str(BASE_DIR))
+    import autostart  # noqa: E402
     import hosts  # noqa: E402
+
+    autostart.unregister()
+    print("Задача планировщика удалена.")
 
     try:
         changed = hosts.normalize()

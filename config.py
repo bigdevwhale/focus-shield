@@ -3,16 +3,22 @@
 import json
 import logging
 import os
+import sys
 from pathlib import Path
 
 log = logging.getLogger("focus.config")
 
 APP_NAME = "focus-shield"
-BASE_DIR = Path(__file__).resolve().parent
-CONFIG_PATH = BASE_DIR / "config.json"
+# Собранный exe (PyInstaller onefile) распаковывается во временную папку,
+# поэтому «папка приложения» — это папка самого exe, а не __file__.
+FROZEN = bool(getattr(sys, "frozen", False))
+BASE_DIR = Path(sys.executable).resolve().parent if FROZEN else Path(__file__).resolve().parent
 
 # Каталог данных вне папки с кодом: hosts-лог, sqlite, снимки камеры.
 DATA_DIR = Path(os.environ.get("LOCALAPPDATA", str(BASE_DIR))) / APP_NAME
+# Из исходников config.json лежит рядом с кодом; у exe — в DATA_DIR, чтобы
+# настройки переживали обновление и перенос exe.
+CONFIG_PATH = DATA_DIR / "config.json" if FROZEN else BASE_DIR / "config.json"
 DB_PATH = DATA_DIR / "stats.db"
 PHOTOS_DIR = DATA_DIR / "photos"
 STATE_PATH = DATA_DIR / "state.json"
