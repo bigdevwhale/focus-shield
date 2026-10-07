@@ -430,7 +430,7 @@ class App:
         if self.break_win:
             self.break_win.close()
             self.break_win = None
-        if self.cfg.get("auto_continue"):
+        if self.cfg.get("auto_next_focus"):
             self._start_next_focus()
         else:
             self.sm.to_idle()
@@ -592,7 +592,7 @@ class App:
                 if self.break_win:
                     self.break_win.close()
                     self.break_win = None
-                if self.cfg.get("auto_continue"):
+                if self.cfg.get("auto_next_focus"):
                     self._start_next_focus()
                 else:
                     self.notifier.toast(T("Перерыв закончен"),

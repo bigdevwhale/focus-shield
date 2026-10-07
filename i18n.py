@@ -222,9 +222,14 @@ EN = {
     "Короткий перерыв": "Short break",
     "Длинный перерыв после": "Long break after",
     "фокусов": "sessions",
-    "Автопродолжение": "Auto-continue",
-    "Перерыв и следующий фокус начинаются сами.":
-        "Breaks and the next focus session start automatically.",
+    "Автозапуск перерыва": "Auto-start breaks",
+    "Перерыв начинается сам после конца фокуса.":
+        "The break starts on its own right after focus ends.",
+    "Автозапуск следующего фокуса": "Auto-start next focus",
+    "Когда перерыв закончился, новая сессия стартует сама. Выключи — чтобы "
+    "запускать фокус вручную.":
+        "When the break ends, the next session starts on its own. Turn this off "
+        "to start each focus session manually.",
     "Строгий режим": "Strict mode",
     "Выйти из фокуса досрочно можно только подождав 10 секунд и введя фразу.":
         "Leaving focus early requires waiting 10 seconds and typing a phrase.",

@@ -42,7 +42,8 @@ DEFAULTS = {
     "long_break_min": 15,      # длинный перерыв
     "cycles": 4,               # фокусов до длинного перерыва
     "strict": True,            # досрочный стоп только через диалог трения
-    "auto_continue": True,     # автоматически начинать перерыв/следующий фокус
+    "auto_continue": True,     # перерыв начинается сам после конца фокуса
+    "auto_next_focus": True,   # следующий фокус начинается сам после перерыва
     "blocklist": list(DEFAULT_BLOCKLIST),  # домены, блокируемые на время фокуса
     "block_doh": True,         # блокировать DoH-endpoints на время сессии
     "focus_apps": [],          # имена exe, которые должны быть в фокусе
@@ -71,8 +72,8 @@ DEFAULTS = {
 _INT_KEYS = ("work_min", "short_break_min", "long_break_min", "cycles",
              "restore_after_sec", "webcam_every_sec", "webcam_retention_days",
              "screen_every_sec")
-_BOOL_KEYS = ("strict", "auto_continue", "block_doh", "webcam_enabled", "tab_guard",
-              "screen_enabled")
+_BOOL_KEYS = ("strict", "auto_continue", "auto_next_focus", "block_doh",
+              "webcam_enabled", "tab_guard", "screen_enabled")
 _LIST_KEYS = ("blocklist", "focus_apps", "title_keywords", "blocked_apps")
 _PATH_LIST_KEYS = ("blocked_folders",)  # регистр путей сохраняем
 _CHOICE_KEYS = {
@@ -101,6 +102,10 @@ def load_config(path: Path = CONFIG_PATH) -> dict:
                 extras = user.pop("blocklist_extras", None)
                 if extras and "blocklist" not in user:
                     user["blocklist"] = DEFAULT_BLOCKLIST + list(extras)
+                # Миграция: раньше auto_continue управлял и перерывом, и следующим
+                # фокусом. Кто выключил его — остаётся с ручным запуском сессий.
+                if "auto_next_focus" not in user and not user.get("auto_continue", True):
+                    cfg["auto_next_focus"] = False
                 cfg.update(user)
     except Exception:
         log.exception("config.json повреждён, использую дефолты: %s", path)

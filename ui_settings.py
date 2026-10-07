@@ -126,8 +126,12 @@ class SettingsWindow:
         self.v_long = self._spin(grid, 2, "Длинный перерыв", c["long_break_min"], 1, 120, "мин")
         self.v_cycles = self._spin(grid, 3, "Длинный перерыв после", c["cycles"], 1, 12,
                                    "фокусов")
-        self.v_auto = self._switch(s, "Автопродолжение", c["auto_continue"],
-                                   "Перерыв и следующий фокус начинаются сами.")
+        self.v_auto = self._switch(s, "Автозапуск перерыва", c["auto_continue"],
+                                   "Перерыв начинается сам после конца фокуса.")
+        self.v_auto_focus = self._switch(s, "Автозапуск следующего фокуса",
+                                         c["auto_next_focus"],
+                                         "Когда перерыв закончился, новая сессия стартует сама. "
+                                         "Выключи — чтобы запускать фокус вручную.")
         self.v_strict = self._switch(s, "Строгий режим", c["strict"],
                                      "Выйти из фокуса досрочно можно только подождав 10 секунд "
                                      "и введя фразу.")
@@ -323,6 +327,7 @@ class SettingsWindow:
             "long_break_min": num(self.v_long, 15),
             "cycles": num(self.v_cycles, 4),
             "auto_continue": bool(self.v_auto.get()),
+            "auto_next_focus": bool(self.v_auto_focus.get()),
             "strict": bool(self.v_strict.get()),
             "blocklist": _lines(self.t_block),
             "block_doh": bool(self.v_doh.get()),
