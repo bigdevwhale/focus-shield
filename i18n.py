@@ -108,6 +108,8 @@ EN = {
     "Снова фокус: {n} мин": "Back to focus: {n} min",
     "Перерыв закончен": "Break is over",
     "Начни следующую сессию из трея": "Start the next session from the tray",
+    "Начни следующую сессию — нажми ▶ на таймере":
+        "Start the next session — press ▶ on the timer",
     "Вкладка закрыта — ты в фокусе": "Tab closed — you're in focus",
     "Вернись к фокусу": "Back to focus",
     "Вернул: {title}": "Brought back: {title}",
@@ -212,9 +214,11 @@ EN = {
     "Применится к окнам, открытым после сохранения.":
         "Applies to windows opened after saving.",
     "Плавающее окно поверх всех окон: время, намерение и кнопки. Перетаскивается "
-    "мышью, правый клик — меню.":
+    "мышью, правый клик — меню. Если следующий фокус запускается вручную, таймер "
+    "остаётся и в простое.":
         "A floating window on top of everything: time, intention and buttons. "
-        "Drag it with the mouse, right-click for the menu.",
+        "Drag it with the mouse, right-click for the menu. When the next focus "
+        "starts manually, the timer also stays visible while idle.",
     "Всегда": "Always",
     "Только во время сессии и перерыва": "Only during sessions and breaks",
     "Не показывать": "Don't show",

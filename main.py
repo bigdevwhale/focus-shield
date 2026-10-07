@@ -358,7 +358,11 @@ class App:
 
     def _sync_widget(self) -> None:
         mode = self.cfg.get("timer_widget", "always")
-        want = mode == "always" or (mode == "session" and self.sm.is_active())
+        # При ручном запуске следующего фокуса таймер остаётся и в простое —
+        # иначе после перерыва он исчезнет, и стартовать придётся из трея.
+        want = (mode == "always"
+                or (mode == "session"
+                    and (self.sm.is_active() or not self.cfg.get("auto_next_focus"))))
         self.widget.update(self._widget_data())
         if want:
             self.widget.show()
@@ -595,8 +599,10 @@ class App:
                 if self.cfg.get("auto_next_focus"):
                     self._start_next_focus()
                 else:
-                    self.notifier.toast(T("Перерыв закончен"),
-                                        T("Начни следующую сессию из трея"))
+                    hint = (T("Начни следующую сессию — нажми ▶ на таймере")
+                            if self.cfg.get("timer_widget") != "off"
+                            else T("Начни следующую сессию из трея"))
+                    self.notifier.toast(T("Перерыв закончен"), hint)
                 self.tray.refresh(self.sm.state)
 
         state = self.sm.state
