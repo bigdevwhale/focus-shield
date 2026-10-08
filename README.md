@@ -47,6 +47,19 @@ Show it **always**, **only during sessions**, or **never**.
 
 <p align="center"><img src="docs/timer.gif" alt="Floating timer over a code editor" width="760"></p>
 
+### 🌱 A sprout that grows with your pomodoros
+
+Turn on the optional **mascot** (Settings → On-screen timer) and a little sprout
+sits next to the timer. It grows through your pomodoro series: the stem stretches
+during each focus, new leaves appear with every finished session, a bud forms near
+the end — and it **blooms on the long break**. Then a new sprout starts.
+
+It reacts to what you're doing, too: frowning with concentration during focus,
+sweating in the last minute, relaxing on breaks, napping while idle. Click it
+and it jumps.
+
+<p align="center"><img src="docs/mascot.png" alt="The mascot from napping seedling to blooming flower" width="760"></p>
+
 ### 🎯 Start with an intention, finish with a check-in
 
 Every session starts with *what exactly will be done*. When it ends, FocusShield
