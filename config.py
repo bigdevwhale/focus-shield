@@ -63,6 +63,7 @@ DEFAULTS = {
     "blocked_apps": [],        # exe, которые закрываются во время фокуса
     "blocked_folders": [],     # папки, недоступные во время фокуса (NTFS deny)
     "timer_widget": "always",  # плавающий таймер: always | session | off
+    "mascot": False,           # маскот-росток рядом с таймером
     "widget_x": None,          # позиция таймера (None — по умолчанию)
     "widget_y": None,
     "theme": "system",         # system | light | dark
@@ -73,7 +74,7 @@ _INT_KEYS = ("work_min", "short_break_min", "long_break_min", "cycles",
              "restore_after_sec", "webcam_every_sec", "webcam_retention_days",
              "screen_every_sec")
 _BOOL_KEYS = ("strict", "auto_continue", "auto_next_focus", "block_doh",
-              "webcam_enabled", "tab_guard", "screen_enabled")
+              "webcam_enabled", "tab_guard", "screen_enabled", "mascot")
 _LIST_KEYS = ("blocklist", "focus_apps", "title_keywords", "blocked_apps")
 _PATH_LIST_KEYS = ("blocked_folders",)  # регистр путей сохраняем
 _CHOICE_KEYS = {

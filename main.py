@@ -208,7 +208,8 @@ class App:
         self.tray = Tray(self.view, self.emit)
         self.notifier = Notifier(self.tray.icon)
         self.widget = TimerWidget(self.root, on_primary=self._widget_primary,
-                                  on_menu=self._widget_menu, on_moved=self._widget_moved)
+                                  on_menu=self._widget_menu, on_moved=self._widget_moved,
+                                  mascot=self.cfg.get("mascot"))
         self.widget.place(self.cfg.get("widget_x"), self.cfg.get("widget_y"))
 
     # ---------- события трея (кладутся из потока pystray) ----------
@@ -337,24 +338,29 @@ class App:
         total = max(1.0, s.ends_at - s.started_at) if s.ends_at else 0
         cycles = self.cfg.get("cycles", 4)
         camera = (self.cfg.get("webcam_enabled") and not self.webcam.disabled)
+        # Рост маскота-ростка: доля серии помидоров до длинного перерыва.
+        # Внутри фокуса растёт плавно, к длинному перерыву — 1.0 (цветок).
         if sm.state == ses.FOCUS:
+            done = 1 - sm.remaining() / total if total else 0
             return {"state": "focus", "remaining": sm.remaining(), "total": total,
                     "title": sm.remaining_str(), "subtitle": s.intention or T("Фокус"),
-                    "cycle": s.cycle + 1, "cycles": cycles, "camera": camera}
+                    "cycle": s.cycle + 1, "cycles": cycles, "camera": camera,
+                    "growth": (s.cycle + max(0.0, min(1.0, done))) / cycles}
         if sm.state in (ses.BREAK, ses.LONG_BREAK):
             name = T("Длинный перерыв") if sm.state == ses.LONG_BREAK else T("Перерыв")
             return {"state": sm.state, "remaining": sm.remaining(), "total": total,
                     "title": sm.remaining_str(),
                     "subtitle": f"{name} · " + T("отойди от экрана"),
-                    "cycle": s.cycle or cycles, "cycles": cycles, "camera": False}
+                    "cycle": s.cycle or cycles, "cycles": cycles, "camera": False,
+                    "growth": (s.cycle or cycles) / cycles}
         if sm.state == ses.OUTCOME_PENDING:
             return {"state": "idle", "remaining": 0, "total": 0, "title": T("Готово"),
                     "subtitle": T("Самоотчёт по сессии…"), "cycle": 0, "cycles": None,
-                    "camera": False}
+                    "camera": False, "growth": min(1.0, (s.cycle + 1) / cycles)}
         return {"state": "idle", "remaining": 0, "total": 0,
                 "title": f"{self.cfg.get('work_min', 25)}:00",
                 "subtitle": T("Готов к фокусу — нажми ▶"), "cycle": 0, "cycles": None,
-                "camera": False}
+                "camera": False, "growth": s.cycle / cycles}
 
     def _sync_widget(self) -> None:
         mode = self.cfg.get("timer_widget", "always")
@@ -473,6 +479,7 @@ class App:
             if theme_changed:
                 theme.apply(self.root, self.cfg["theme"])
                 self.widget.retheme()
+            self.widget.set_mascot(self.cfg["mascot"])
             if self.sm.state == ses.FOCUS:  # новые блокировки и снимки — сразу
                 self._apply_block()
                 self._webcam_start()

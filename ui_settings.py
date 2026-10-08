@@ -118,6 +118,10 @@ class SettingsWindow:
             ("always", "Всегда"),
             ("session", "Только во время сессии и перерыва"),
             ("off", "Не показывать")))
+        self.v_mascot = self._switch(s, "Маскот", c["mascot"],
+                                     "Росток рядом с таймером: растёт с каждым помидором и к "
+                                     "длинному перерыву распускает цветок. Сосредоточен в фокусе, "
+                                     "отдыхает на перерыве, дремлет в простое. Его можно ткнуть.")
 
         s = self._section("Помодоро")
         grid = ttk.Frame(s)
@@ -323,6 +327,7 @@ class SettingsWindow:
             "blocked_apps": blocker.sanitize_apps(_lines(self.t_blocked_apps)),
             "blocked_folders": folders,
             "timer_widget": self.v_widget.get(),
+            "mascot": bool(self.v_mascot.get()),
             "work_min": num(self.v_work, 25),
             "short_break_min": num(self.v_short, 5),
             "long_break_min": num(self.v_long, 15),

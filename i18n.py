@@ -222,6 +222,12 @@ EN = {
     "Всегда": "Always",
     "Только во время сессии и перерыва": "Only during sessions and breaks",
     "Не показывать": "Don't show",
+    "Маскот": "Mascot",
+    "Росток рядом с таймером: растёт с каждым помидором и к длинному перерыву распускает "
+    "цветок. Сосредоточен в фокусе, отдыхает на перерыве, дремлет в простое. Его можно ткнуть.":
+        "A little sprout next to the timer: it grows with every pomodoro and blooms by the "
+        "long break. Focused during focus, relaxing on breaks, napping when idle. "
+        "You can poke it.",
     "Помодоро": "Pomodoro",
     "Короткий перерыв": "Short break",
     "Длинный перерыв после": "Long break after",

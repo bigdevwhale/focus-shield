@@ -5,19 +5,26 @@
 с номером цикла, в центре время и намерение, справа кнопка главного
 действия (старт / стоп / пропустить перерыв) и меню «⋯». Перетаскивается
 мышью за любое место, позиция сохраняется. Обновляется из секундного тика.
+Опционально слева живёт маскот (mascot.py) — анимируется своим циклом after.
 """
 import ctypes
 import tkinter as tk
+import time
 import tkinter.font as tkfont
 
+from PIL import ImageTk
+
+import mascot
 import theme
 from theme import ICON, P, px
 
 W, H = 330, 76
+MASCOT_W = 48     # полоса под маскота слева
+FRAME_MS = 80
 
 
 class TimerWidget:
-    def __init__(self, root, on_primary, on_menu, on_moved):
+    def __init__(self, root, on_primary, on_menu, on_moved, mascot=False):
         """on_primary() — главная кнопка; on_menu(event) — открыть меню;
         on_moved(x, y) — окно перетащили (сохранить позицию)."""
         self.root = root
@@ -29,12 +36,15 @@ class TimerWidget:
         self._drag = None
         self._hover = None
         self._ticks = 0
+        self.mascot = bool(mascot)
+        self._anim = None      # id цикла анимации маскота
+        self._poke = 0.0       # когда маскота ткнули
 
         self.win = tk.Toplevel(root)
         self.win.withdraw()
         self.win.overrideredirect(True)        # без рамки и без панели задач
         self.win.attributes("-topmost", True)
-        self.w, self.h = px(W), px(H)
+        self.w, self.h = self._width(), px(H)
         self.c = theme.canvas(self.win, width=self.w, height=self.h, bg=P["surface"])
         self.c.pack(fill="both", expand=True)
 
@@ -53,6 +63,13 @@ class TimerWidget:
         self.c.bind("<Motion>", self._hover_check)
         self.c.bind("<Leave>", lambda e: self._set_hover(None))
 
+    def _width(self) -> int:
+        return px(W + (MASCOT_W if self.mascot else 0))
+
+    @property
+    def _ox(self) -> int:
+        return px(MASCOT_W) if self.mascot else 0
+
     # ---------- позиция ----------
 
     def place(self, x=None, y=None) -> None:
@@ -70,12 +87,35 @@ class TimerWidget:
         theme.round_corners(self.win)
         self.win.attributes("-topmost", True)
         self._redraw()
+        self._animate()
 
     def hide(self) -> None:
         if not self.visible:
             return
         self.visible = False
         self.win.withdraw()
+
+    def set_mascot(self, on: bool) -> None:
+        """Включить/выключить маскота. Окно растёт влево — правый край на месте."""
+        on = bool(on)
+        if on == self.mascot:
+            return
+        old = self.w
+        self.mascot = on
+        self.w = self._width()
+        self.c.configure(width=self.w)
+        try:
+            x, y = (int(v) for v in self.win.geometry().split("+")[1:3])
+        except ValueError:
+            x = y = None
+        if x is None:
+            self.place()
+        else:
+            x -= self.w - old
+            self.win.geometry(f"{self.w}x{self.h}+{x}+{y}")
+            self.on_moved(x, y)
+        self._redraw()
+        self._animate()
 
     def retheme(self) -> None:
         self.c.configure(bg=P["surface"])
@@ -105,7 +145,7 @@ class TimerWidget:
         btn_color = P["focus"] if d["state"] == "idle" else color
 
         # Кольцо прогресса
-        cx, cy, r = px(38), self.h // 2, px(22)
+        cx, cy, r = px(38) + self._ox, self.h // 2, px(22)
         c.create_oval(cx - r, cy - r, cx + r, cy + r, outline=P["track"], width=px(4))
         if d["total"] > 0:
             done = 1 - d["remaining"] / d["total"]
@@ -120,7 +160,7 @@ class TimerWidget:
                           font=self._fonts["ring"])
 
         # Время и подпись
-        tx = px(76)
+        tx = px(76) + self._ox
         c.create_text(tx, px(28), text=d["title"], anchor="w", fill=P["text"],
                       font=self._fonts["time"])
         if d.get("camera"):
@@ -137,6 +177,42 @@ class TimerWidget:
                  "long_break": ICON["next"]}.get(d["state"], ICON["play"])
         self._button("primary", primary_x, glyph, filled=True, color=btn_color)
         self._button("more", self.w - px(24), ICON["more"], r=px(13))
+        self._draw_mascot()
+
+    # ---------- маскот ----------
+
+    def _draw_mascot(self) -> None:
+        self.c.delete("mascot")
+        d = self._data
+        if not (self.mascot and d):
+            return
+        now = time.monotonic()
+        state = d["state"]
+        if now - self._poke < 0.7:
+            mood = "joy"
+        elif state == "focus":
+            mood = "hurry" if 0 < d["remaining"] <= 60 else "focus"
+        elif state in ("break", "long_break"):
+            mood = "break"
+        else:
+            mood = "sleep"
+        # в простое — приглушённый цвет фокуса: «зелёный, но спит»
+        color = (theme.mix(P["focus"], P["surface"], 0.45) if state == "idle"
+                 else theme.state_color(state))
+        img = mascot.frame(px(100) / 100, mood, now, color, P["surface"], P["dark"],
+                           growth=d.get("growth", 0.0))
+        self._mimg = ImageTk.PhotoImage(img)  # ссылка, иначе Tk потеряет картинку
+        self.c.create_image(px(4), 0, image=self._mimg, anchor="nw", tags="mascot")
+
+    def _animate(self) -> None:
+        """Цикл кадров маскота; живёт, только пока окно видно и маскот включён."""
+        if self._anim is not None:
+            self.win.after_cancel(self._anim)
+            self._anim = None
+        if not (self.visible and self.mascot):
+            return
+        self._draw_mascot()
+        self._anim = self.win.after(FRAME_MS, self._animate)
 
     def _button(self, tag, x, glyph, filled=False, color=None, r=None) -> None:
         c, cy, r = self.c, self.h // 2, r or px(16)
@@ -191,7 +267,9 @@ class TimerWidget:
             self.on_moved(self.win.winfo_x(), self.win.winfo_y())
             return
         tag = self._hit(e.x, e.y)
-        if tag == "primary":
+        if tag is None and self.mascot and e.x < self._ox:
+            self._poke = time.monotonic()
+        elif tag == "primary":
             self.on_primary()
         elif tag == "more":
             self.on_menu(e)
