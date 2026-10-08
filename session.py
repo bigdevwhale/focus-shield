@@ -24,6 +24,7 @@ LONG_BREAK = "long_break"
 
 STATE_VERSION = 1
 CLOCK_TOLERANCE = 60.0  # сек; откаты меньше этого считаем шумом
+SERIES_TIMEOUT = 3600.0  # сек простоя, после которых серия помидоров начинается заново
 
 
 @dataclass
@@ -32,6 +33,7 @@ class SessionState:
     ends_at: float = 0.0
     started_at: float = 0.0
     cycle: int = 0            # сколько фокусов завершено в текущей серии
+    # В простое started_at — момент, с которого длится простой (для сброса серии).
     work_min: int = 25
     intention: str = ""
     session_db_id: int | None = None
@@ -101,10 +103,15 @@ class SessionManager:
 
     def start_focus(self, minutes: int, intention: str, db_id, now: float = None) -> None:
         now = time.time() if now is None else now
+        prev = self.s
+        cycle = prev.cycle
+        if prev.state == IDLE and prev.started_at and now - prev.started_at > SERIES_TIMEOUT:
+            cycle = 0  # долго не работали — новая серия
         self.s = SessionState(
             state=FOCUS,
             started_at=now,
             ends_at=now + minutes * 60,
+            cycle=cycle,
             work_min=minutes,
             intention=intention,
             session_db_id=db_id,
@@ -133,8 +140,18 @@ class SessionManager:
         self.save()
 
     def to_idle(self, now: float = None) -> None:
+        """Простой. Серия (cycle), длительность и намерение сохраняются — их
+        подхватит следующий фокус: ручной или автозапуск после перерыва."""
         now = time.time() if now is None else now
-        self.s = SessionState(last_seen=now)
+        prev = self.s
+        if prev.state == IDLE:
+            since = prev.started_at or now
+        elif prev.ends_at and prev.ends_at < now:
+            since = prev.ends_at  # истекло, пока приложение не работало
+        else:
+            since = now
+        self.s = SessionState(started_at=since, cycle=prev.cycle, work_min=prev.work_min,
+                              intention=prev.intention, last_seen=now)
         self.save()
 
     # ---------- тик ----------

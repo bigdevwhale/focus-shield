@@ -8,6 +8,7 @@
 Опционально слева живёт маскот (mascot.py) — анимируется своим циклом after.
 """
 import ctypes
+import math
 import tkinter as tk
 import time
 import tkinter.font as tkfont
@@ -39,6 +40,7 @@ class TimerWidget:
         self.mascot = bool(mascot)
         self._anim = None      # id цикла анимации маскота
         self._poke = 0.0       # когда маскота ткнули
+        self._look = (0.8, 0.0)  # куда смотрят глаза маскота, сглаженно
 
         self.win = tk.Toplevel(root)
         self.win.withdraw()
@@ -199,10 +201,27 @@ class TimerWidget:
         # в простое — приглушённый цвет фокуса: «зелёный, но спит»
         color = (theme.mix(P["focus"], P["surface"], 0.45) if state == "idle"
                  else theme.state_color(state))
+        if mood in ("focus", "hurry"):
+            self._look = self._follow_cursor()
         img = mascot.frame(px(100) / 100, mood, now, color, P["surface"], P["dark"],
-                           growth=d.get("growth", 0.0))
+                           growth=d.get("growth", 0.0), look=self._look)
         self._mimg = ImageTk.PhotoImage(img)  # ссылка, иначе Tk потеряет картинку
         self.c.create_image(px(4), 0, image=self._mimg, anchor="nw", tags="mascot")
+
+    def _follow_cursor(self):
+        """Направление взгляда на курсор (-1…1), плавно догоняет цель."""
+        try:
+            mx, my = self.win.winfo_pointerxy()
+            ex = self.win.winfo_rootx() + px(4 + mascot.W / 2)
+            ey = self.win.winfo_rooty() + px(36)
+        except Exception:
+            return self._look
+        dx, dy = mx - ex, my - ey
+        dist = math.hypot(dx, dy)
+        reach = min(1.0, dist / px(120))  # рядом — смотрит почти прямо
+        tx, ty = (dx / dist * reach, dy / dist * reach) if dist else (0.0, 0.0)
+        lx, ly = self._look
+        return lx + (tx - lx) * 0.35, ly + (ty - ly) * 0.35
 
     def _animate(self) -> None:
         """Цикл кадров маскота; живёт, только пока окно видно и маскот включён."""

@@ -360,7 +360,10 @@ class App:
         return {"state": "idle", "remaining": 0, "total": 0,
                 "title": f"{self.cfg.get('work_min', 25)}:00",
                 "subtitle": T("Готов к фокусу — нажми ▶"), "cycle": 0, "cycles": None,
-                "camera": False, "growth": s.cycle / cycles}
+                "camera": False,
+                # серия «остыла» — следующий фокус начнёт её заново
+                "growth": 0.0 if time.time() - s.started_at > ses.SERIES_TIMEOUT
+                else s.cycle / cycles}
 
     def _sync_widget(self) -> None:
         mode = self.cfg.get("timer_widget", "always")

@@ -32,13 +32,14 @@ PETAL_DARK = (232, 104, 152)
 POLLEN = (255, 214, 92)
 
 _cache = OrderedDict()
-_CACHE_MAX = 400
+_CACHE_MAX = 600
 _font_cache = {}
 
 
 def frame(k: float, mood: str, t: float, color: str, bg: str, dark: bool,
-          growth: float = 0.0) -> Image.Image:
-    """Кадр маскота размером (W·k, H·k), RGB на фоне bg; t — время в секундах."""
+          growth: float = 0.0, look=(0.8, 0.0)) -> Image.Image:
+    """Кадр маскота размером (W·k, H·k), RGB на фоне bg; t — время в секундах;
+    look — куда смотрят глаза (-1…1 по x и y), по умолчанию — вправо, на таймер."""
     if mood == "sleep":
         breath, bob, sway = math.sin(t * 1.4) * 1.6, 0.0, 0.0
     elif mood == "break":
@@ -58,7 +59,8 @@ def frame(k: float, mood: str, t: float, color: str, bg: str, dark: bool,
              blink=mood in ("focus", "hurry") and (t % 4.0) < 0.14,
              zz=q((t * 0.45) % 1.0, 0.04) if mood == "sleep" else 0,
              spark=q((t * 3) % 1.0, 0.1) if mood == "joy" else 0,
-             growth=q(max(0.0, min(1.0, growth)), 0.02))
+             growth=q(max(0.0, min(1.0, growth)), 0.02),
+             look=(q(look[0], 0.25), q(look[1], 0.25)))
     key = (round(k, 3), mood, color, bg, dark, tuple(sorted(p.items())))
     img = _cache.get(key)
     if img is None:
@@ -73,7 +75,8 @@ def frame(k: float, mood: str, t: float, color: str, bg: str, dark: bool,
 
 # ---------- отрисовка ----------
 
-def _render(k, mood, color, bg, dark, breath, bob, sway, wave, blink, zz, spark, growth):
+def _render(k, mood, color, bg, dark, breath, bob, sway, wave, blink, zz, spark, growth,
+            look):
     s = k * SS
     size = (round(W * s), round(H * s))
     if not dark:  # на насыщенном цвете светлой палитры тёмные глаза теряются
@@ -136,7 +139,7 @@ def _render(k, mood, color, bg, dark, breath, bob, sway, wave, blink, zz, spark,
         md.ellipse(S(bx - 2.6, cy + 2.4, bx + 2.6, cy + 4.8), fill=255)
     _paint(base, _blur(m, 0.8 * s), BLUSH, 0.55)
 
-    _face(base, s, mood, cx, cy, blink)
+    _face(base, s, mood, cx, cy, blink, look)
 
     if mood == "hurry":
         _drop(base, s, cx + 13, cy - 9)
@@ -150,7 +153,7 @@ def _render(k, mood, color, bg, dark, breath, bob, sway, wave, blink, zz, spark,
     return base.convert("RGB").resize((round(W * k), round(H * k)), Image.LANCZOS)
 
 
-def _face(base, s, mood, cx, cy, blink):
+def _face(base, s, mood, cx, cy, blink, look):
     d = ImageDraw.Draw(base)
     ink = INK + (255,)
     lw = max(1, round(1.15 * s))
@@ -167,10 +170,10 @@ def _face(base, s, mood, cx, cy, blink):
             d.arc(S(ex - 2.6, ey - 3, ex + 2.6, ey + 1.6), 20, 160, fill=ink, width=lw)
         else:
             ew, eh = (2.2, 3.0) if mood == "hurry" else (1.9, 2.6)
-            x = ex + 1.0                          # косится вправо — на таймер
-            d.ellipse(S(x - ew, ey - eh, x + ew, ey + eh), fill=ink)
-            d.ellipse(S(x + 0.1, ey - eh + 0.5, x + 1.7, ey - eh + 2.1), fill=WHITE + (255,))
-            d.ellipse(S(x - 1.3, ey + 0.8, x - 0.4, ey + 1.7), fill=WHITE + (220,))
+            x, y = ex + look[0] * 1.6, ey + look[1] * 1.1   # смотрит на курсор
+            d.ellipse(S(x - ew, y - eh, x + ew, y + eh), fill=ink)
+            d.ellipse(S(x + 0.1, y - eh + 0.5, x + 1.7, y - eh + 2.1), fill=WHITE + (255,))
+            d.ellipse(S(x - 1.3, y + 0.8, x - 0.4, y + 1.7), fill=WHITE + (220,))
             if mood == "focus":                   # сведённые брови — сосредоточен
                 d.line(S(ex + sd * 2.6, ey - 5.2, ex - sd * 1.8, ey - 4.2),
                        fill=ink, width=max(1, round(0.95 * s)))
