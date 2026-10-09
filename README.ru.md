@@ -1,6 +1,6 @@
 # FocusShield 🎯
 
-[English](README.md) · **Русский**
+[English](README.md) · **Русский** · [Сайт](https://bigdevwhale.github.io/stillcraft/apps/focusshield/)
 
 Десктопная тулза концентрации для Windows 10/11. Помодоро-сессии, на время
 которых отвлекающие сайты, приложения и папки недоступны. Фокус-приложения

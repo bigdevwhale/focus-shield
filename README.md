@@ -14,7 +14,7 @@ websites, browser tabs, apps and folders — and helps you keep yourself honest.
 
 <a href="https://github.com/bigdevwhale/focus-shield/releases/latest/download/FocusShield.exe"><img src="https://img.shields.io/badge/Download-FocusShield.exe-2ea44f?style=for-the-badge&logo=windows&logoColor=white" alt="Download FocusShield.exe"></a>
 
-[Features](#-features) · [Install](#-install) · [How it works](#-how-it-works) · [FAQ](#-faq) · [Русский](README.ru.md)
+[Features](#-features) · [Install](#-install) · [How it works](#-how-it-works) · [FAQ](#-faq) · [Website](https://bigdevwhale.github.io/stillcraft/apps/focusshield/) · [Русский](README.ru.md)
 
 </div>
 
